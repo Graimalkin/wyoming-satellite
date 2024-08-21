@@ -36,11 +36,6 @@ subprocess.check_call(
     ]
 )
 
-# Installing audio enhancements
-subprocess.check_call(
-    pip + ["install", "-r", str(_PROGRAM_DIR / "requirements_audio_enhancement.txt")]
-)
-
 if args.dev:
     # Install dev requirements
     subprocess.check_call(
