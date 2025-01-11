@@ -758,7 +758,6 @@ class SatelliteBase:
                         self._wake_queue.get(), name="wake_to_client"
                     )
                     pending.add(to_client_task)
-                    _LOGGER.debug("From satellite to wake service")
                     
 
                 if from_client_task is None:
@@ -1314,12 +1313,21 @@ class WakeStreamingSatellite(SatelliteBase):
             if self.stt_audio_writer is not None:
                 self.stt_audio_writer.write(audio_bytes)
 
+        if not self.is_streaming:
+            # Forward to wake word service
+            _LOGGER.debug("Not streaming, forward to wake word service")
+            await self.event_to_wake(event)
+
         if ( self.is_streaming
             and (self.timeout_seconds is not None)
             and (time.monotonic() >= self.timeout_seconds)
         ):
             _LOGGER.debug("Streaming timed out, stopping")
-            # Time out during wake word recognition
+
+            # do one last send to the server
+            await self.event_to_server(event)
+
+            # Time out while listening
             self.is_streaming = False
             self.timeout_seconds = None
 
@@ -1334,14 +1342,18 @@ class WakeStreamingSatellite(SatelliteBase):
             await self.trigger_streaming_stop()
 
         if self.is_streaming:
+            if self.timeout_seconds is None:
+                # set our timeout window
+                if self.settings.vad.wake_word_timeout is not None:
+                    # Set future time when we'll stop streaming if the wake word
+                    # hasn't been detected.
+                    self.timeout_seconds = (
+                        time.monotonic() + self.settings.vad.wake_word_timeout
+                    )
+
             # Forward to server
-            ## Gets stuck here after "hey jarvis"
-            _LOGGER.debug("Forward mic to server")
             await self.event_to_server(event)
-        else:
-            # Forward to wake word service
-            _LOGGER.debug("Forward to wake word service")
-            await self.event_to_wake(event)
+
 
     async def event_from_wake(self, event: Event) -> None:
         if Info.is_type(event.type):
@@ -1386,17 +1398,6 @@ class WakeStreamingSatellite(SatelliteBase):
             else:
                 # No refractory period
                 self.refractory_timestamp.pop(detection.name, None)
-
-            # set our timeout window
-            if self.settings.vad.wake_word_timeout is not None:
-                # Set future time when we'll stop streaming if the wake word
-                # hasn't been detected.
-                self.timeout_seconds = (
-                    time.monotonic() + self.settings.vad.wake_word_timeout
-                )
-            else:
-                # No timeout
-                self.timeout_seconds = None
 
             # Forward to the server
             await self.event_to_server(event)
