@@ -96,6 +96,8 @@ class SatelliteBase:
         self.microphone_muted = False
         self._unmute_microphone_task: Optional[asyncio.Task] = None
 
+        self._run_wake_word = True
+
         # Debug audio recording
         self.wake_audio_writer: Optional[DebugAudioWriter] = None
         self.stt_audio_writer: Optional[DebugAudioWriter] = None
@@ -747,7 +749,7 @@ class SatelliteBase:
                 pass  # ignore disconnect errors
 
         while self.is_running:
-            if not self.run_wake_word:
+            if not self._run_wake_word:
                 clear_wake_queue()
                 pending.clear()
                 done.clear()
@@ -1341,8 +1343,8 @@ class WakeStreamingSatellite(SatelliteBase):
         if not self.is_streaming:
             # Forward to wake word service
             _LOGGER.debug("Not streaming, forward to wake word service")
-            if not self.run_wake_word:
-                self.run_wake_word = True
+            if not self._run_wake_word:
+                self._run_wake_word = True
             await self.event_to_wake(event)
 
         if ( self.is_streaming
@@ -1400,7 +1402,7 @@ class WakeStreamingSatellite(SatelliteBase):
             detection = Detection.from_event(event)
 
             # we just detected, so we don't need to be running wake word
-            self.run_wake_word = False
+            self._run_wake_word = False
 
             # Check refractory period to avoid multiple back-to-back detections
             refractory_timestamp = self.refractory_timestamp.get(detection.name)
