@@ -1365,6 +1365,7 @@ class WakeStreamingSatellite(SatelliteBase):
 
         if self.is_streaming or (self.server_id is None):
             # Not detecting or no server connected
+            _LOGGER.debug("Ignoring wake word event since we're streaming")
             return
 
         if Detection.is_type(event.type):
@@ -1402,6 +1403,7 @@ class WakeStreamingSatellite(SatelliteBase):
                 self.refractory_timestamp[detection.name] = (
                     time.monotonic() + self.settings.wake.refractory_seconds
                 )
+                _LOGGER.debug("refractory_timestamp set to: %s", self.refractory_timestamp)
             else:
                 # No refractory period
                 self.refractory_timestamp.pop(detection.name, None)
