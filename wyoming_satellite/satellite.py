@@ -1360,6 +1360,10 @@ class WakeStreamingSatellite(SatelliteBase):
             self._wake_info_ready.set()
             return
 
+        _LOGGER.debug("Event from wake service: %s", event)
+        _LOGGER.debug("is_streaming: %s", self.is_streaming)
+        _LOGGER.debug("refractory_timestamp: %s", self.refractory_timestamp)
+
         if self.is_streaming or (self.server_id is None):
             # Not detecting or no server connected
             return
