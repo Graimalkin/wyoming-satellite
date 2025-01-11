@@ -346,11 +346,6 @@ class SatelliteBase:
             end_stage=end_stage,
             wake_word_name=pipeline_name,
             restart_on_end=restart_on_end,
-            snd_format=AudioFormat(
-                rate=self.settings.snd.rate,
-                width=self.settings.snd.width,
-                channels=self.settings.snd.channels,
-            ),
         ).event()
         _LOGGER.debug(run_pipeline)
         await self.event_to_server(run_pipeline)
