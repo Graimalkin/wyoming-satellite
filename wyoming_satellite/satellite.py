@@ -1300,13 +1300,15 @@ class WakeStreamingSatellite(SatelliteBase):
             _LOGGER.debug("event_from_mic 1247: Microphone is muted")
             return
 
+        chunk: Optional[AudioChunk] = None
+
         # Debug audio recording
         if (self.wake_audio_writer is not None) or (self.stt_audio_writer is not None):
             if audio_bytes is None:
                 chunk = AudioChunk.from_event(event)
                 audio_bytes = chunk.audio
 
-            if self.wake_audio_writer is not None:
+            if self.wake_audio_writer is not None and not self.is_streaming:
                 self.wake_audio_writer.write(audio_bytes)
 
             if self.stt_audio_writer is not None:
