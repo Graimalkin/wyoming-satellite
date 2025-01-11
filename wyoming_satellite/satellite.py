@@ -776,7 +776,6 @@ class SatelliteBase:
                     # Event to go to wake service (audio)
                     assert to_client_task is not None
                     event = to_client_task.result()
-                    _LOGGER.debug("Event to go to wake service (audio)")
                     to_client_task = None
                     await wake_client.write_event(event)
 
