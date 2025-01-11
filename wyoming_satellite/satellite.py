@@ -1383,6 +1383,7 @@ class WakeStreamingSatellite(SatelliteBase):
                 return
             else:
                 _LOGGER.debug("time after refractory check: %s", time.monotonic())
+                _LOGGER.debug("refractory_seconds is: %s", self.settings.wake.refractory_seconds)
 
             # Stop debug recording (wake)
             if self.wake_audio_writer is not None:
