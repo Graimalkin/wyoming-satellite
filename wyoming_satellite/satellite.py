@@ -691,7 +691,7 @@ class SatelliteBase:
             self._wake_queue.put_nowait(event)
 
     def clear_wake_queue(self) -> None:
-    """Clear the wake queue and associated tasks."""
+        """Clear the wake queue and associated tasks."""
         if self._wake_queue is not None:
             while not self._wake_queue.empty():
                 self._wake_queue.get_nowait()  # Discard all events
