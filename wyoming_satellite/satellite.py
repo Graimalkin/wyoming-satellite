@@ -344,7 +344,7 @@ class SatelliteBase:
         run_pipeline = RunPipeline(
             start_stage=start_stage,
             end_stage=end_stage,
-            name=pipeline_name,
+            wake_word_name=pipeline_name,
             restart_on_end=restart_on_end,
             snd_format=AudioFormat(
                 rate=self.settings.snd.rate,
@@ -1386,7 +1386,7 @@ class WakeStreamingSatellite(SatelliteBase):
             _LOGGER.debug(detection)
 
             self.is_streaming = True
-            _LOGGER.debug("Streaming audio")
+            _LOGGER.debug("Starting treaming audio to server")
 
             if self.settings.wake.refractory_seconds is not None:
                 # Another detection may not occur for this wake word until
