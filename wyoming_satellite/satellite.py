@@ -1362,8 +1362,6 @@ class WakeStreamingSatellite(SatelliteBase):
 
         _LOGGER.debug("Event from wake service: %s", event)
         _LOGGER.debug("is_streaming: %s", self.is_streaming)
-        _LOGGER.debug("refractory_timestamp: %s", self.refractory_timestamp)
-        _LOGGER.debug("time is: %s", time.monotonic())
 
         if self.is_streaming or (self.server_id is None):
             # Not detecting or no server connected
@@ -1372,6 +1370,10 @@ class WakeStreamingSatellite(SatelliteBase):
         if Detection.is_type(event.type):
             detection = Detection.from_event(event)
 
+            _LOGGER.debug("detection is: %s", detection)
+            _LOGGER.debug("refractory_timestamp: %s", self.refractory_timestamp)
+            _LOGGER.debug("time is: %s", time.monotonic())
+
             # Check refractory period to avoid multiple back-to-back detections
             refractory_timestamp = self.refractory_timestamp.get(detection.name)
             if (refractory_timestamp is not None) and (
@@ -1379,6 +1381,8 @@ class WakeStreamingSatellite(SatelliteBase):
             ):
                 _LOGGER.debug("Wake word detection occurred during refractory period")
                 return
+            else:
+                _LOGGER.debug("time after refractory check: %s", time.monotonic())
 
             # Stop debug recording (wake)
             if self.wake_audio_writer is not None:
@@ -1388,10 +1392,8 @@ class WakeStreamingSatellite(SatelliteBase):
             if self.stt_audio_writer is not None:
                 self.stt_audio_writer.start(timestamp=self._debug_recording_timestamp)
 
-            _LOGGER.debug(detection)
-
             self.is_streaming = True
-            _LOGGER.debug("Starting treaming audio to server")
+            _LOGGER.debug("Starting streaming audio to server")
 
             if self.settings.wake.refractory_seconds is not None:
                 # Another detection may not occur for this wake word until
