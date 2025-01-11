@@ -783,7 +783,8 @@ class SatelliteBase:
                     # Event from wake service (detection)
                     assert from_client_task is not None
                     event = from_client_task.result()
-                    _LOGGER.debug("Event from wake service (detection)")
+                    _LOGGER.debug("from_client_task %s", event)
+                    _LOGGER.debug("Event from wake service (detection):")
                     from_client_task = None
 
                     if event is None:
@@ -1234,6 +1235,7 @@ class WakeStreamingSatellite(SatelliteBase):
         if RunSatellite.is_type(event.type):
             is_run_satellite = True
             self._is_paused = False
+            _LOGGER.info("Waiting for speech")
 
         elif PauseSatellite.is_type(event.type):
             is_pause_satellite = True
@@ -1242,7 +1244,7 @@ class WakeStreamingSatellite(SatelliteBase):
         elif Error.is_type(event.type):
             is_error = True
 
-        if is_transcript or is_pause_satellite:
+        if is_transcript or is_pause_satellite or is_error:
             # Stop streaming before event_from_server is called because it will
             # play the "done" WAV.
             self.is_streaming = False
@@ -1256,6 +1258,10 @@ class WakeStreamingSatellite(SatelliteBase):
         if is_run_satellite or is_transcript or is_error or is_pause_satellite:
             # Stop streaming
             self.is_streaming = False
+
+            # Stop debug recording (stt)
+            if self.stt_audio_writer is not None:
+                self.stt_audio_writer.stop()
 
             if is_pause_satellite:
                 self._is_paused = True
@@ -1295,7 +1301,6 @@ class WakeStreamingSatellite(SatelliteBase):
             or self.microphone_muted
             or self._is_paused
         ):
-            _LOGGER.debug("event_from_mic 1247: Microphone is muted")
             return
 
         chunk: Optional[AudioChunk] = None
@@ -1309,7 +1314,7 @@ class WakeStreamingSatellite(SatelliteBase):
             if self.wake_audio_writer is not None and not self.is_streaming:
                 self.wake_audio_writer.write(audio_bytes)
 
-            if self.stt_audio_writer is not None:
+            if self.stt_audio_writer is not None and self.is_streaming:
                 self.stt_audio_writer.write(audio_bytes)
 
         if not self.is_streaming:
@@ -1371,10 +1376,6 @@ class WakeStreamingSatellite(SatelliteBase):
         if Detection.is_type(event.type):
             detection = Detection.from_event(event)
 
-            _LOGGER.debug("detection is: %s", detection)
-            _LOGGER.debug("refractory_timestamp: %s", self.refractory_timestamp)
-            _LOGGER.debug("time is: %s", time.monotonic())
-
             # Check refractory period to avoid multiple back-to-back detections
             refractory_timestamp = self.refractory_timestamp.get(detection.name)
             if (refractory_timestamp is not None) and (
@@ -1382,9 +1383,6 @@ class WakeStreamingSatellite(SatelliteBase):
             ):
                 _LOGGER.debug("Wake word detection occurred during refractory period")
                 return
-            else:
-                _LOGGER.debug("time after refractory check: %s", time.monotonic())
-                _LOGGER.debug("refractory_seconds is: %s", self.settings.wake.refractory_seconds)
 
             # Stop debug recording (wake)
             if self.wake_audio_writer is not None:
@@ -1403,7 +1401,6 @@ class WakeStreamingSatellite(SatelliteBase):
                 self.refractory_timestamp[detection.name] = (
                     time.monotonic() + self.settings.wake.refractory_seconds
                 )
-                _LOGGER.debug("refractory_timestamp set to: %s", self.refractory_timestamp)
             else:
                 # No refractory period
                 self.refractory_timestamp.pop(detection.name, None)
