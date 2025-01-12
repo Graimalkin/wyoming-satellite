@@ -689,6 +689,8 @@ class SatelliteBase:
 
     async def event_to_wake(self, event: Event) -> None:
         """Send event to the wake service."""
+        if not self._run_wake_word:
+            _run_wake_word = True
         if self._wake_queue is not None:
             self._wake_queue.put_nowait(event)
 
@@ -831,6 +833,8 @@ class SatelliteBase:
         wake_names: Optional[List[str]] = None
         if self.settings.wake.names:
             wake_names = [w.name for w in self.settings.wake.names]
+
+        self._run_wake_word = True
 
         await self.event_to_wake(Detect(names=wake_names).event())
         await self.trigger_detect()
