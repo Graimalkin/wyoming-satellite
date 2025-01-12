@@ -744,7 +744,6 @@ class SatelliteBase:
                     from_client_task.cancel()
                     from_client_task = None
                 
-                pending.clear()
             except Exception:
                 pass  # ignore disconnect errors
 
@@ -1264,7 +1263,7 @@ class WakeStreamingSatellite(SatelliteBase):
         elif Error.is_type(event.type):
             is_error = True
 
-        if is_transcript or is_pause_satellite:
+        if is_transcript or is_pause_satellite: # or is_error:
             # Stop streaming before event_from_server is called because it will
             # play the "done" WAV.
             self.is_streaming = False
