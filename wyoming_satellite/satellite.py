@@ -781,6 +781,7 @@ class SatelliteBase:
                         self._wake_queue.get(), name="wake_to_client"
                     )
                     pending.add(to_client_task)
+                    _LOGGER.debug("From satellite to wake service")
                     
 
                 if from_client_task is None:
