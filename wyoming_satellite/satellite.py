@@ -806,7 +806,6 @@ class SatelliteBase:
                     # Event from wake service (detection)
                     assert from_client_task is not None
                     event = from_client_task.result()
-                    _LOGGER.debug("Event from Wake service: %s", event)
                     from_client_task = None
 
                     if event is None:
