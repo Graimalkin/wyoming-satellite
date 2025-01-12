@@ -1328,14 +1328,24 @@ class WakeStreamingSatellite(SatelliteBase):
             # Forward to wake word service
             await self.event_to_wake(event)
 
+        if self.is_streaming:
+            if self.timeout_seconds is None:
+                # set our timeout window
+                if self.settings.vad.wake_word_timeout is not None:
+                    # Set future time when we'll stop streaming if the wake word
+                    # hasn't been detected.
+                    self.timeout_seconds = (
+                        time.monotonic() + self.settings.vad.wake_word_timeout
+                    )
+
+            # Forward to server
+            await self.event_to_server(event)
+
         if ( self.is_streaming
             and (self.timeout_seconds is not None)
             and (time.monotonic() >= self.timeout_seconds)
         ):
             _LOGGER.debug("Streaming timed out, stopping")
-
-            # One last forward to server
-            await self.event_to_server(event)
 
             # Time out while listening
             self.is_streaming = False
@@ -1350,19 +1360,6 @@ class WakeStreamingSatellite(SatelliteBase):
 
             _LOGGER.info("Waiting for speech")
             await self.trigger_streaming_stop()
-
-        if self.is_streaming:
-            if self.timeout_seconds is None:
-                # set our timeout window
-                if self.settings.vad.wake_word_timeout is not None:
-                    # Set future time when we'll stop streaming if the wake word
-                    # hasn't been detected.
-                    self.timeout_seconds = (
-                        time.monotonic() + self.settings.vad.wake_word_timeout
-                    )
-
-            # Forward to server
-            await self.event_to_server(event)
 
     async def event_from_wake(self, event: Event) -> None:
         if Info.is_type(event.type):
