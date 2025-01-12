@@ -701,9 +701,9 @@ class SatelliteBase:
         _LOGGER.debug("Wake queue cleared.")
 
         # Cancel all pending tasks
-        for task in asyncio.all_tasks():
-            if task.get_name().startswith("wake_to_client") or task.get_name().startswith("wake_from_client"):
-                task.cancel()
+        # for task in asyncio.all_tasks():
+        #     if task.get_name().startswith("wake_to_client") or task.get_name().startswith("wake_from_client"):
+        #         task.cancel()
 
     def _make_wake_client(self) -> Optional[AsyncClient]:
         """Create client for wake service."""
