@@ -750,7 +750,7 @@ class SatelliteBase:
 
         while self.is_running:
             if not self._run_wake_word:
-                clear_wake_queue()
+                self.clear_wake_queue()
                 pending.clear()
                 done.clear()
             else:
@@ -765,7 +765,7 @@ class SatelliteBase:
                         _LOGGER.debug("Connected to wake service")
 
                         # Reset
-                        clear_wake_queue()
+                        self.clear_wake_queue()
                         from_client_task = None
                         to_client_task = None
                         pending = set()
