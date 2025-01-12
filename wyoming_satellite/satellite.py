@@ -750,7 +750,8 @@ class SatelliteBase:
 
         while self.is_running:
             if not self._run_wake_word:
-                self.clear_wake_queue()
+                if self._wake_queue is not None:
+                    self.clear_wake_queue()
                 pending.clear()
                 done.clear()
             else:
@@ -806,8 +807,7 @@ class SatelliteBase:
                         # Event from wake service (detection)
                         assert from_client_task is not None
                         event = from_client_task.result()
-                        _LOGGER.debug("from_client_task %s", from_client_task)
-                        _LOGGER.debug("Event from wake service (detection):")
+                        _LOGGER.debug("from_client_task: %s", from_client_task.result)
                         from_client_task = None
 
                         if event is None:
@@ -1036,7 +1036,6 @@ class AlwaysStreamingSatellite(SatelliteBase):
         self, event: Event, audio_bytes: Optional[bytes] = None
     ) -> None:
         if (not self.is_streaming) or self.microphone_muted:
-            _LOGGER.debug("event_from_mic 968: Microphone is muted")
             return
 
         if AudioChunk.is_type(event.type):
@@ -1118,7 +1117,6 @@ class VadStreamingSatellite(SatelliteBase):
             or self.microphone_muted
             or self._is_paused
         ):
-            _LOGGER.debug("event_from_mic 1050: Microphone is muted")
             return
 
         # Only unpack chunk once
@@ -1149,7 +1147,6 @@ class VadStreamingSatellite(SatelliteBase):
             # Stop pipeline
             await self.event_to_server(AudioStop().event())
 
-            _LOGGER.info("Waiting for speech")
             await self.trigger_streaming_stop()
 
         if not self.is_streaming:
