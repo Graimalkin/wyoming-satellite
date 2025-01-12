@@ -781,7 +781,6 @@ class SatelliteBase:
                         self._wake_queue.get(), name="wake_to_client"
                     )
                     pending.add(to_client_task)
-                    _LOGGER.debug("From satellite to wake service")
                     
 
                 if from_client_task is None:
@@ -790,7 +789,6 @@ class SatelliteBase:
                         wake_client.read_event(), name="wake_from_client"
                     )
                     pending.add(from_client_task)
-                    _LOGGER.debug("From wake service to satellite")
 
                 done, pending = await asyncio.wait(
                     pending, return_when=asyncio.FIRST_COMPLETED
@@ -800,6 +798,7 @@ class SatelliteBase:
                     # Event to go to wake service (audio)
                     assert to_client_task is not None
                     event = to_client_task.result()
+                    _LOGGER.debug("Event to Wake service: %s", event)
                     to_client_task = None
                     await wake_client.write_event(event)
 
@@ -807,6 +806,7 @@ class SatelliteBase:
                     # Event from wake service (detection)
                     assert from_client_task is not None
                     event = from_client_task.result()
+                    _LOGGER.debug("Event from Wake service: %s", event)
                     from_client_task = None
 
                     if event is None:
