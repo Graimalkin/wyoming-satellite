@@ -1339,6 +1339,7 @@ class WakeStreamingSatellite(SatelliteBase):
 
         if not self.is_streaming:
             # Forward to wake word service
+            self._run_wake_word = True
             await self.event_to_wake(event)
 
         if ( self.is_streaming
@@ -1437,7 +1438,6 @@ class WakeStreamingSatellite(SatelliteBase):
 
             await self._send_run_pipeline(pipeline_name=pipeline_name)
             await self.forward_event(event)  # forward to event service
-            self._run_wake_word = False
             await self.trigger_detection(Detection.from_event(event))
             await self.trigger_streaming_start()
 
