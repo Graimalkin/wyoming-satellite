@@ -788,7 +788,6 @@ class SatelliteBase:
                     # Event to go to wake service (audio)
                     assert to_client_task is not None
                     event = to_client_task.result()
-                    _LOGGER.debug("Event to Wake service: %s", event.type)
                     to_client_task = None
                     await wake_client.write_event(event)
 
@@ -1372,7 +1371,6 @@ class WakeStreamingSatellite(SatelliteBase):
             return
 
         _LOGGER.debug("Event from wake service: %s", event)
-        _LOGGER.debug("is_streaming: %s", self.is_streaming)
 
         if self.is_streaming or (self.server_id is None):
             # Not detecting or no server connected
@@ -1392,6 +1390,8 @@ class WakeStreamingSatellite(SatelliteBase):
             ):
                 _LOGGER.debug("Wake word detection occurred during refractory period")
                 return
+            else:
+                _LOGGER.debug("Wake word detected: %s", detection)
 
             # Stop debug recording (wake)
             if self.wake_audio_writer is not None:
