@@ -833,8 +833,6 @@ class SatelliteBase:
         if self.settings.wake.names:
             wake_names = [w.name for w in self.settings.wake.names]
 
-        self._run_wake_word = True
-
         await self.event_to_wake(Detect(names=wake_names).event())
         await self.trigger_detect()
 
@@ -1289,6 +1287,8 @@ class WakeStreamingSatellite(SatelliteBase):
             else:
                 # Go back to wake word detection
                 await self.trigger_streaming_stop()
+                self._run_wake_word = True
+                _LOGGER.debug("1291 _run_wake_word: %s", self._run_wake_word)
 
                 # It's possible to be paused in the middle of streaming
                 if not self._is_paused:
@@ -1339,6 +1339,7 @@ class WakeStreamingSatellite(SatelliteBase):
 
         if not self.is_streaming:
             # Forward to wake word service
+            _LOGGER.debug("1343 _run_wake_word: %s", self._run_wake_word)
             self._run_wake_word = True
             await self.event_to_wake(event)
 
