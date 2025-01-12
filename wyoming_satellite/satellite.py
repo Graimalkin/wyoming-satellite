@@ -96,7 +96,7 @@ class SatelliteBase:
         self.microphone_muted = False
         self._unmute_microphone_task: Optional[asyncio.Task] = None
 
-        self._run_wake_word = True
+        # self._run_wake_word = True
 
         # Debug audio recording
         self.wake_audio_writer: Optional[DebugAudioWriter] = None
@@ -747,13 +747,13 @@ class SatelliteBase:
                 pass  # ignore disconnect errors
 
         while self.is_running:
-            if not self._run_wake_word:
-                _LOGGER.debug("Wake word detection disabled")
-                if self._wake_queue is not None:
-                    self.clear_wake_queue()
-                pending.clear()
-                done.clear()
-                continue
+            # if not self._run_wake_word:
+            #    _LOGGER.debug("Wake word detection disabled")
+            #    if self._wake_queue is not None:
+            #        self.clear_wake_queue()
+            #    pending.clear()
+            #    done.clear()
+            #    continue
 
             try:
                 if self._wake_queue is None:
@@ -833,7 +833,7 @@ class SatelliteBase:
         if self.settings.wake.names:
             wake_names = [w.name for w in self.settings.wake.names]
 
-        self._run_wake_word = True
+        # self._run_wake_word = True
 
         await self.event_to_wake(Detect(names=wake_names).event())
         await self.trigger_detect()
