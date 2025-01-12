@@ -749,6 +749,7 @@ class SatelliteBase:
 
         while self.is_running:
             if not self._run_wake_word:
+                _LOGGER.debug("Wake word detection disabled")
                 if self._wake_queue is not None:
                     self.clear_wake_queue()
                 pending.clear()
@@ -806,7 +807,6 @@ class SatelliteBase:
                         # Event from wake service (detection)
                         assert from_client_task is not None
                         event = from_client_task.result()
-                        _LOGGER.debug("from_client_task: %s", event)
                         from_client_task = None
 
                         if event is None:
