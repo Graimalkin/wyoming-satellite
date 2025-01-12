@@ -1335,6 +1335,9 @@ class WakeStreamingSatellite(SatelliteBase):
         ):
             _LOGGER.debug("Streaming timed out, stopping")
 
+            # One last forward to server
+            await self.event_to_server(event)
+
             # Time out while listening
             self.is_streaming = False
             self.timeout_seconds = None
