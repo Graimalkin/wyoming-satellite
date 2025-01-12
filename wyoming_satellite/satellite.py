@@ -748,7 +748,6 @@ class SatelliteBase:
 
         while self.is_running:
             if not self._run_wake_word:
-               _LOGGER.debug("Wake word detection disabled")
                if self._wake_queue is not None:
                    self.clear_wake_queue()
                pending.clear()
