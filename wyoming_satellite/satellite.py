@@ -615,6 +615,9 @@ class SatelliteBase:
 
                 await snd_client.write_event(event)
 
+                if AudioStop.is_type(event.type):
+                    _LOGGING.debug("Audio stopped: %s", event)
+
                 if self.settings.snd.disconnect_after_stop and AudioStop.is_type(
                     event.type
                 ):
