@@ -743,7 +743,6 @@ class SatelliteBase:
                 if from_client_task is not None:
                     from_client_task.cancel()
                     from_client_task = None
-                
             except Exception:
                 pass  # ignore disconnect errors
 
@@ -754,77 +753,77 @@ class SatelliteBase:
                     self.clear_wake_queue()
                 pending.clear()
                 done.clear()
-            else:
-                try:
-                    if self._wake_queue is None:
-                        self._wake_queue = asyncio.Queue()
+                continue
 
-                    if wake_client is None:
-                        wake_client = self._make_wake_client()
-                        assert wake_client is not None
-                        await wake_client.connect()
-                        _LOGGER.debug("Connected to wake service")
+            try:
+                if self._wake_queue is None:
+                    self._wake_queue = asyncio.Queue()
 
-                        # Reset
-                        self.clear_wake_queue()
-                        from_client_task = None
-                        to_client_task = None
-                        pending = set()
-                        self._wake_queue = asyncio.Queue()
+                if wake_client is None:
+                    wake_client = self._make_wake_client()
+                    assert wake_client is not None
+                    await wake_client.connect()
+                    _LOGGER.debug("Connected to wake service")
 
-                        # Inform wake service of which wake word(s) to detect
-                        await self._send_wake_detect()
+                    # Reset
+                    from_client_task = None
+                    to_client_task = None
+                    pending = set()
+                    self._wake_queue = asyncio.Queue()
 
-                    # Read/write in "parallel"
-                    if to_client_task is None:
-                        # From satellite to wake service
-                        to_client_task = asyncio.create_task(
-                            self._wake_queue.get(), name="wake_to_client"
-                        )
-                        pending.add(to_client_task)
-                        
+                    # Inform wake service of which wake word(s) to detect
+                    await self._send_wake_detect()
 
-                    if from_client_task is None:
-                        # From wake service to satellite
-                        from_client_task = asyncio.create_task(
-                            wake_client.read_event(), name="wake_from_client"
-                        )
-                        pending.add(from_client_task)
-                        _LOGGER.debug("From wake service to satellite")
-
-                    done, pending = await asyncio.wait(
-                        pending, return_when=asyncio.FIRST_COMPLETED
+                # Read/write in "parallel"
+                if to_client_task is None:
+                    # From satellite to wake service
+                    to_client_task = asyncio.create_task(
+                        self._wake_queue.get(), name="wake_to_client"
                     )
+                    pending.add(to_client_task)
+                    
 
-                    if to_client_task in done:
-                        # Event to go to wake service (audio)
-                        assert to_client_task is not None
-                        event = to_client_task.result()
-                        to_client_task = None
-                        await wake_client.write_event(event)
+                if from_client_task is None:
+                    # From wake service to satellite
+                    from_client_task = asyncio.create_task(
+                        wake_client.read_event(), name="wake_from_client"
+                    )
+                    pending.add(from_client_task)
+                    _LOGGER.debug("From wake service to satellite")
 
-                    if from_client_task in done:
-                        # Event from wake service (detection)
-                        assert from_client_task is not None
-                        event = from_client_task.result()
-                        from_client_task = None
+                done, pending = await asyncio.wait(
+                    pending, return_when=asyncio.FIRST_COMPLETED
+                )
 
-                        if event is None:
-                            _LOGGER.warning("Wake service disconnected")
-                            await _disconnect()
-                            wake_client = None  # reconnect
-                            await asyncio.sleep(self.settings.wake.reconnect_seconds)
-                            continue
+                if to_client_task in done:
+                    # Event to go to wake service (audio)
+                    assert to_client_task is not None
+                    event = to_client_task.result()
+                    to_client_task = None
+                    await wake_client.write_event(event)
 
-                        await self.event_from_wake(event)
+                if from_client_task in done:
+                    # Event from wake service (detection)
+                    assert from_client_task is not None
+                    event = from_client_task.result()
+                    from_client_task = None
 
-                except asyncio.CancelledError:
-                    break
-                except Exception:
-                    _LOGGER.exception("Unexpected error in wake read task")
-                    await _disconnect()
-                    wake_client = None  # reconnect
-                    await asyncio.sleep(self.settings.wake.reconnect_seconds)
+                    if event is None:
+                        _LOGGER.warning("Wake service disconnected")
+                        await _disconnect()
+                        wake_client = None  # reconnect
+                        await asyncio.sleep(self.settings.wake.reconnect_seconds)
+                        continue
+
+                    await self.event_from_wake(event)
+
+            except asyncio.CancelledError:
+                break
+            except Exception:
+                _LOGGER.exception("Unexpected error in wake read task")
+                await _disconnect()
+                wake_client = None  # reconnect
+                await asyncio.sleep(self.settings.wake.reconnect_seconds)
 
         await _disconnect()
 
@@ -1281,8 +1280,8 @@ class WakeStreamingSatellite(SatelliteBase):
             self.is_streaming = False
 
             # Stop debug recording (stt)
-            if self.stt_audio_writer is not None:
-                self.stt_audio_writer.stop()
+            # if self.stt_audio_writer is not None:
+            #    self.stt_audio_writer.stop()
 
             if is_pause_satellite:
                 self._is_paused = True
@@ -1293,7 +1292,6 @@ class WakeStreamingSatellite(SatelliteBase):
 
                 # It's possible to be paused in the middle of streaming
                 if not self._is_paused:
-
                     await self._send_wake_detect()
                     _LOGGER.info("Waiting for wake word")
 
