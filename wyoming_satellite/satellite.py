@@ -1338,11 +1338,6 @@ class WakeStreamingSatellite(SatelliteBase):
             if self.stt_audio_writer is not None and self.is_streaming:
                 self.stt_audio_writer.write(audio_bytes)
 
-        if not self.is_streaming:
-            # Forward to wake word service
-            _LOGGER.debug("Not streaming, forward to wake word service")
-            await self.event_to_wake(event)
-
         if ( self.is_streaming
             and (self.timeout_seconds is not None)
             and (time.monotonic() >= self.timeout_seconds)
@@ -1378,6 +1373,11 @@ class WakeStreamingSatellite(SatelliteBase):
 
             # Forward to server
             await self.event_to_server(event)
+        else:
+            #if not self.is_streaming:
+            # Forward to wake word service
+            _LOGGER.debug("Not streaming, forward to wake word service")
+            await self.event_to_wake(event)
 
 
     async def event_from_wake(self, event: Event) -> None:
