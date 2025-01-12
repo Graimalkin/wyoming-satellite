@@ -96,7 +96,7 @@ class SatelliteBase:
         self.microphone_muted = False
         self._unmute_microphone_task: Optional[asyncio.Task] = None
 
-        # self._run_wake_word = True
+        self._run_wake_word = True
 
         # Debug audio recording
         self.wake_audio_writer: Optional[DebugAudioWriter] = None
@@ -747,13 +747,13 @@ class SatelliteBase:
                 pass  # ignore disconnect errors
 
         while self.is_running:
-            # if not self._run_wake_word:
-            #    _LOGGER.debug("Wake word detection disabled")
-            #    if self._wake_queue is not None:
-            #        self.clear_wake_queue()
-            #    pending.clear()
-            #    done.clear()
-            #    continue
+            if not self._run_wake_word:
+               _LOGGER.debug("Wake word detection disabled")
+               if self._wake_queue is not None:
+                   self.clear_wake_queue()
+               pending.clear()
+               done.clear()
+               continue
 
             try:
                 if self._wake_queue is None:
@@ -798,7 +798,7 @@ class SatelliteBase:
                     # Event to go to wake service (audio)
                     assert to_client_task is not None
                     event = to_client_task.result()
-                    _LOGGER.debug("Event to Wake service: %s", event)
+                    _LOGGER.debug("Event to Wake service: %s", event.type)
                     to_client_task = None
                     await wake_client.write_event(event)
 
@@ -1281,8 +1281,8 @@ class WakeStreamingSatellite(SatelliteBase):
             self.is_streaming = False
 
             # Stop debug recording (stt)
-            # if self.stt_audio_writer is not None:
-            #    self.stt_audio_writer.stop()
+            if self.stt_audio_writer is not None:
+               self.stt_audio_writer.stop()
 
             if is_pause_satellite:
                 self._is_paused = True
@@ -1338,14 +1338,16 @@ class WakeStreamingSatellite(SatelliteBase):
             if self.stt_audio_writer is not None and self.is_streaming:
                 self.stt_audio_writer.write(audio_bytes)
 
+        if not self.is_streaming:
+            # Forward to wake word service
+            _LOGGER.debug("Not streaming, forward to wake word service")
+            await self.event_to_wake(event)
+
         if ( self.is_streaming
             and (self.timeout_seconds is not None)
             and (time.monotonic() >= self.timeout_seconds)
         ):
             _LOGGER.debug("Streaming timed out, stopping")
-
-            # do one last send to the server
-            await self.event_to_server(event)
 
             # Time out while listening
             self.is_streaming = False
@@ -1373,12 +1375,6 @@ class WakeStreamingSatellite(SatelliteBase):
 
             # Forward to server
             await self.event_to_server(event)
-        else:
-            #if not self.is_streaming:
-            # Forward to wake word service
-            _LOGGER.debug("Not streaming, forward to wake word service")
-            await self.event_to_wake(event)
-
 
     async def event_from_wake(self, event: Event) -> None:
         if Info.is_type(event.type):
