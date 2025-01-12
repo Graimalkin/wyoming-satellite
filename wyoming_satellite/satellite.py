@@ -96,8 +96,6 @@ class SatelliteBase:
         self.microphone_muted = False
         self._unmute_microphone_task: Optional[asyncio.Task] = None
 
-        self._run_wake_word = True
-
         # Debug audio recording
         self.wake_audio_writer: Optional[DebugAudioWriter] = None
         self.stt_audio_writer: Optional[DebugAudioWriter] = None
@@ -689,8 +687,6 @@ class SatelliteBase:
 
     async def event_to_wake(self, event: Event) -> None:
         """Send event to the wake service."""
-        if not self._run_wake_word:
-            _run_wake_word = True
         if self._wake_queue is not None:
             self._wake_queue.put_nowait(event)
 
@@ -699,7 +695,7 @@ class SatelliteBase:
         if self._wake_queue is not None:
             while not self._wake_queue.empty():
                 self._wake_queue.get_nowait()  # Discard all events
-            self._wake_queue = None
+            # self._wake_queue = None
         _LOGGER.debug("Wake queue cleared.")
 
         # Cancel all pending tasks
@@ -749,13 +745,6 @@ class SatelliteBase:
                 pass  # ignore disconnect errors
 
         while self.is_running:
-            if not self._run_wake_word:
-               if self._wake_queue is not None:
-                   self.clear_wake_queue()
-               pending.clear()
-               done.clear()
-               continue
-
             try:
                 if self._wake_queue is None:
                     self._wake_queue = asyncio.Queue()
@@ -833,8 +822,6 @@ class SatelliteBase:
         wake_names: Optional[List[str]] = None
         if self.settings.wake.names:
             wake_names = [w.name for w in self.settings.wake.names]
-
-        self._run_wake_word = True
 
         await self.event_to_wake(Detect(names=wake_names).event())
         await self.trigger_detect()
@@ -1290,8 +1277,6 @@ class WakeStreamingSatellite(SatelliteBase):
             else:
                 # Go back to wake word detection
                 await self.trigger_streaming_stop()
-                self._run_wake_word = True
-                _LOGGER.debug("1291 _run_wake_word: %s", self._run_wake_word)
 
                 # It's possible to be paused in the middle of streaming
                 if not self._is_paused:
@@ -1342,8 +1327,6 @@ class WakeStreamingSatellite(SatelliteBase):
 
         if not self.is_streaming:
             # Forward to wake word service
-            _LOGGER.debug("1343 _run_wake_word: %s", self._run_wake_word)
-            self._run_wake_word = True
             await self.event_to_wake(event)
 
         if ( self.is_streaming
@@ -1396,8 +1379,8 @@ class WakeStreamingSatellite(SatelliteBase):
         if Detection.is_type(event.type):
             detection = Detection.from_event(event)
 
-            # we just detected, so we don't need to be running wake word
-            self._run_wake_word = False
+            # we just detected, so clear the wake word queue
+            self.clear_wake_queue
 
             # Check refractory period to avoid multiple back-to-back detections
             refractory_timestamp = self.refractory_timestamp.get(detection.name)
