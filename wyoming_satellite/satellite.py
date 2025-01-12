@@ -771,7 +771,6 @@ class SatelliteBase:
                         self._wake_queue.get(), name="wake_to_client"
                     )
                     pending.add(to_client_task)
-                    
 
                 if from_client_task is None:
                     # From wake service to satellite
@@ -1266,10 +1265,6 @@ class WakeStreamingSatellite(SatelliteBase):
             # Stop streaming
             self.is_streaming = False
 
-            # Stop debug recording (stt)
-            if self.stt_audio_writer is not None:
-               self.stt_audio_writer.stop()
-
             if is_pause_satellite:
                 self._is_paused = True
                 _LOGGER.debug("Satellite is paused")
@@ -1310,23 +1305,17 @@ class WakeStreamingSatellite(SatelliteBase):
         ):
             return
 
-        chunk: Optional[AudioChunk] = None
-
         # Debug audio recording
         if (self.wake_audio_writer is not None) or (self.stt_audio_writer is not None):
             if audio_bytes is None:
                 chunk = AudioChunk.from_event(event)
                 audio_bytes = chunk.audio
 
-            if self.wake_audio_writer is not None and not self.is_streaming:
+            if self.wake_audio_writer is not None:
                 self.wake_audio_writer.write(audio_bytes)
 
-            if self.stt_audio_writer is not None and self.is_streaming:
+            if self.stt_audio_writer is not None:
                 self.stt_audio_writer.write(audio_bytes)
-
-        if not self.is_streaming:
-            # Forward to wake word service
-            await self.event_to_wake(event)
 
         if self.is_streaming:
             if self.timeout_seconds is None:
@@ -1340,13 +1329,15 @@ class WakeStreamingSatellite(SatelliteBase):
 
             # Forward to server
             await self.event_to_server(event)
+        else:
+            # Forward to wake word service
+            await self.event_to_wake(event)
 
         if ( self.is_streaming
             and (self.timeout_seconds is not None)
             and (time.monotonic() >= self.timeout_seconds)
         ):
             _LOGGER.debug("Streaming timed out, stopping")
-
             # Time out while listening
             self.is_streaming = False
             self.timeout_seconds = None
