@@ -626,6 +626,7 @@ class SatelliteBase:
                 ):
                     await _disconnect()
                     if snd_event.is_tts:
+                        await self.event_to_server(Played().event())
                         await self.trigger_played()
                     snd_client = None  # reconnect on next event
             except asyncio.CancelledError:
